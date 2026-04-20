@@ -35,9 +35,6 @@
     th { color: #3b82f6; }
     .status-pending { background: #f59e0b; color: #1e293b; padding: 0.2rem 0.5rem; border-radius: 1rem; font-size: 0.7rem; display: inline-block; }
     .status-completed { background: #10b981; color: white; padding: 0.2rem 0.5rem; border-radius: 1rem; font-size: 0.7rem; display: inline-block; }
-    .status-approved { background: #10b981; color: white; padding: 0.2rem 0.5rem; border-radius: 1rem; font-size: 0.7rem; display: inline-block; }
-    .status-verified { background: #10b981; color: white; padding: 0.2rem 0.5rem; border-radius: 1rem; font-size: 0.7rem; display: inline-block; }
-    .status-suspended { background: #ef4444; color: white; padding: 0.2rem 0.5rem; border-radius: 1rem; font-size: 0.7rem; display: inline-block; }
     .approve-btn { background: #10b981; border: none; padding: 0.3rem 0.8rem; border-radius: 0.5rem; color: white; cursor: pointer; margin-right: 0.5rem; }
     .reject-btn { background: #ef4444; border: none; padding: 0.3rem 0.8rem; border-radius: 0.5rem; color: white; cursor: pointer; }
     .users-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1rem; }
@@ -54,7 +51,6 @@
     .game-name { color: white; font-weight: 500; }
     .edit-price-btn { background: #3b82f6; border: none; padding: 0.3rem 0.8rem; border-radius: 0.5rem; color: white; cursor: pointer; }
     .request-card { background: #0f172a; border-radius: 1rem; padding: 1rem; border: 1px solid #334155; margin-bottom: 1rem; }
-    .request-card h4 { color: white; margin-bottom: 0.5rem; }
     .messages-list { display: flex; flex-direction: column; gap: 1rem; max-height: 500px; overflow-y: auto; }
     .message-card { background: #0f172a; border-radius: 1rem; padding: 1rem; border: 1px solid #334155; }
     .reply-area { display: flex; gap: 0.5rem; margin-top: 0.8rem; }
@@ -62,15 +58,19 @@
     .reply-area button { background: #3b82f6; border: none; padding: 0.6rem 1.2rem; border-radius: 2rem; color: white; cursor: pointer; }
     .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; }
     .modal.show { display: flex; }
-    .modal-content { background: #1e293b; border-radius: 1rem; padding: 1.5rem; width: 90%; max-width: 500px; color: white; border: 1px solid #334155; }
-    .modal-content input { width: 100%; padding: 0.8rem; margin: 1rem 0; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 0.5rem; }
-    .modal-buttons { display: flex; gap: 10px; }
-    .modal-buttons button { flex: 1; padding: 0.8rem; border-radius: 0.5rem; border: none; cursor: pointer; }
+    .modal-content { background: #1e293b; border-radius: 1rem; padding: 1.5rem; width: 90%; max-width: 600px; max-height: 80vh; overflow-y: auto; color: white; border: 1px solid #334155; }
+    .modal-content h3 { margin-bottom: 1rem; }
+    .modal-content h4 { margin-top: 0.8rem; margin-bottom: 0.5rem; color: #3b82f6; }
+    .modal-content input { width: 100%; padding: 0.8rem; margin: 0.5rem 0; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 0.5rem; }
+    .modal-buttons { display: flex; gap: 10px; margin-top: 1rem; }
+    .modal-buttons button { flex: 1; padding: 0.8rem; border-radius: 0.5rem; border: none; cursor: pointer; font-weight: 600; }
     .save-btn { background: #3b82f6; color: white; }
     .cancel-btn { background: #475569; color: white; }
     .badge { background: #ef4444; color: white; border-radius: 50%; padding: 0.2rem 0.5rem; font-size: 0.7rem; margin-left: 0.5rem; }
     .empty-state { text-align: center; color: #64748b; padding: 2rem; }
     .price-item { display: flex; justify-content: space-between; align-items: center; padding: 0.6rem; border-bottom: 1px solid #334155; }
+    .price-item:last-child { border-bottom: none; }
+    .price-item span { flex: 1; }
     .price-item input { width: 140px; margin: 0; }
   </style>
 </head>
@@ -166,7 +166,7 @@
   function formatNumber(num) { return (num || 0).toLocaleString(); }
   function formatDate(dateString) { if (!dateString) return 'N/A'; try { return new Date(dateString).toLocaleString(); } catch(e) { return dateString; } }
 
-  // --- Load Functions (အတိုချုံးထားပါတယ်) ---
+  // --- Load Orders ---
   function loadOrders() {
     db.ref('orders').on('value', (snapshot) => {
       allOrders = [];
@@ -190,6 +190,7 @@
     document.querySelectorAll('.reject-btn[data-type="order"]').forEach(btn => btn.addEventListener('click', () => db.ref('orders/' + btn.dataset.id).update({ status: 'Rejected' })));
   }
 
+  // --- Load Topups ---
   function loadTopups() {
     db.ref('topups').on('value', (snapshot) => {
       allTopups = [];
@@ -224,6 +225,7 @@
     }));
   }
 
+  // --- Load Users ---
   function loadUsers() {
     db.ref('users').on('value', (snapshot) => {
       allUsers = [];
@@ -249,7 +251,7 @@
     document.querySelectorAll('.btn-unban').forEach(btn => btn.addEventListener('click', () => db.ref('users/' + btn.dataset.id).update({ status: 'Verified' })));
   }
 
-  // ============ FIXED: Balance Add/Remove (User Account မပျက်ရအောင်) ============
+  // Balance Add/Remove
   function openBalanceModal(userId, mode) {
     currentUserId = userId;
     currentBalanceMode = mode;
@@ -266,49 +268,27 @@
 
   async function processBalance() {
     const amount = parseInt(document.getElementById('amountInput').value);
-    if (isNaN(amount) || amount <= 0) {
-      alert('Please enter a valid amount');
-      return;
-    }
-    
+    if (isNaN(amount) || amount <= 0) { alert('Please enter a valid amount'); return; }
     try {
-      // Get current user data first
       const userSnapshot = await db.ref('users/' + currentUserId).once('value');
       const userData = userSnapshot.val();
-      
-      if (!userData) {
-        alert('User not found!');
-        closeBalanceModal();
-        return;
-      }
-      
+      if (!userData) { alert('User not found!'); closeBalanceModal(); return; }
       let currentBalance = userData.balance || 0;
       let newBalance;
-      
       if (currentBalanceMode === 'add') {
         newBalance = currentBalance + amount;
       } else {
-        if (currentBalance < amount) {
-          alert(`Insufficient balance! Current balance: ${currentBalance.toLocaleString()} Ks`);
-          return;
-        }
+        if (currentBalance < amount) { alert(`Insufficient balance! Current: ${currentBalance.toLocaleString()} Ks`); return; }
         newBalance = currentBalance - amount;
       }
-      
-      // Update balance using set (not transaction) to avoid null issues
       await db.ref('users/' + currentUserId).update({ balance: newBalance });
-      
       alert(`Balance ${currentBalanceMode === 'add' ? 'added' : 'removed'} successfully!\nNew balance: ${newBalance.toLocaleString()} Ks`);
       closeBalanceModal();
-      renderUsers(); // Refresh the user list
+      renderUsers();
       updateStats();
-      
-    } catch (error) {
-      console.error('Balance update error:', error);
-      alert('Error updating balance. Please try again.');
-    }
+    } catch (error) { console.error('Balance error:', error); alert('Error updating balance.'); }
   }
-  // --- Load Games ---
+// --- Load Games ---
   function loadGames() {
     db.ref('games').on('value', (snapshot) => {
       allGames = [];
@@ -330,47 +310,114 @@
     document.querySelectorAll('.edit-price-btn').forEach(btn => btn.addEventListener('click', () => openPriceModal(btn.dataset.game)));
   }
 
+  // --- Load Prices ---
   function loadPrices() {
     db.ref('prices/mobile_legend').on('value', snap => { if (snap.exists()) mlPrices = snap.val(); });
     db.ref('prices/pubg').on('value', snap => { if (snap.exists()) pubgPrices = snap.val(); });
   }
 
+  // ============ PRICE MODAL WITH SAVE & CANCEL BUTTONS ============
   function openPriceModal(gameName) {
     currentPriceGame = gameName;
     const container = document.getElementById('priceListContainer');
     container.innerHTML = '';
+    
     if (gameName === 'Mobile Legend' && mlPrices) {
       document.getElementById('priceModalTitle').innerHTML = `<i class="fas fa-edit"></i> Edit Prices - ${gameName}`;
-      const wp = document.createElement('div'); wp.className = 'price-item'; wp.innerHTML = `<span><strong>Weekly Pass</strong></span><input type="number" id="ml_weekly" value="${mlPrices.weeklyPass?.price || 6500}" step="100">`; container.appendChild(wp);
-      const frTitle = document.createElement('h4'); frTitle.innerHTML = '2x Diamonds'; container.appendChild(frTitle);
-      mlPrices.firstRecharge?.forEach((item, i) => { const div = document.createElement('div'); div.className = 'price-item'; div.innerHTML = `<span>${item.diamonds}</span><input type="number" id="ml_fr_${i}" value="${item.price}" step="100">`; container.appendChild(div); });
-      const odTitle = document.createElement('h4'); odTitle.innerHTML = 'Other Diamonds'; container.appendChild(odTitle);
-      mlPrices.otherDiamonds?.forEach((item, i) => { const div = document.createElement('div'); div.className = 'price-item'; div.innerHTML = `<span>${item.diamonds} Diamonds</span><input type="number" id="ml_od_${i}" value="${item.price}" step="100">`; container.appendChild(div); });
+      
+      // Weekly Pass
+      const wpDiv = document.createElement('div'); wpDiv.className = 'price-item';
+      wpDiv.innerHTML = `<span><strong>Weekly Pass</strong></span><input type="number" id="ml_weekly" value="${mlPrices.weeklyPass?.price || 6500}" step="100">`;
+      container.appendChild(wpDiv);
+      
+      // First Recharge
+      const frTitle = document.createElement('h4'); frTitle.innerHTML = '✨ 2x Diamonds (First Recharge)'; container.appendChild(frTitle);
+      if (mlPrices.firstRecharge) {
+        mlPrices.firstRecharge.forEach((item, i) => {
+          const div = document.createElement('div'); div.className = 'price-item';
+          div.innerHTML = `<span>${item.diamonds}</span><input type="number" id="ml_fr_${i}" value="${item.price}" step="100">`;
+          container.appendChild(div);
+        });
+      }
+      
+      // Other Diamonds
+      const odTitle = document.createElement('h4'); odTitle.innerHTML = '💎 Other Diamonds'; container.appendChild(odTitle);
+      if (mlPrices.otherDiamonds) {
+        mlPrices.otherDiamonds.forEach((item, i) => {
+          const div = document.createElement('div'); div.className = 'price-item';
+          div.innerHTML = `<span>${item.diamonds} Diamonds</span><input type="number" id="ml_od_${i}" value="${item.price}" step="100">`;
+          container.appendChild(div);
+        });
+      }
+      
       document.getElementById('priceModal').classList.add('show');
-    } else if (gameName === 'Pubg' && pubgPrices) {
+    } 
+    else if (gameName === 'Pubg' && pubgPrices) {
       document.getElementById('priceModalTitle').innerHTML = `<i class="fas fa-edit"></i> Edit Prices - ${gameName}`;
-      const ucTitle = document.createElement('h4'); ucTitle.innerHTML = 'UC Top Up'; container.appendChild(ucTitle);
-      pubgPrices.uc?.forEach((item, i) => { const div = document.createElement('div'); div.className = 'price-item'; div.innerHTML = `<span>${item.name}</span><input type="number" id="pubg_uc_${i}" value="${item.price}" step="100">`; container.appendChild(div); });
-      const codeTitle = document.createElement('h4'); codeTitle.innerHTML = 'Code Price'; container.appendChild(codeTitle);
-      pubgPrices.code?.forEach((item, i) => { const div = document.createElement('div'); div.className = 'price-item'; div.innerHTML = `<span>${item.name}</span><input type="number" id="pubg_code_${i}" value="${item.price}" step="100">`; container.appendChild(div); });
+      
+      // UC Top Up
+      const ucTitle = document.createElement('h4'); ucTitle.innerHTML = '💰 UC Top Up'; container.appendChild(ucTitle);
+      if (pubgPrices.uc) {
+        pubgPrices.uc.forEach((item, i) => {
+          const div = document.createElement('div'); div.className = 'price-item';
+          div.innerHTML = `<span>${item.name}</span><input type="number" id="pubg_uc_${i}" value="${item.price}" step="100">`;
+          container.appendChild(div);
+        });
+      }
+      
+      // Code Price
+      const codeTitle = document.createElement('h4'); codeTitle.innerHTML = '🎫 Code Price'; container.appendChild(codeTitle);
+      if (pubgPrices.code) {
+        pubgPrices.code.forEach((item, i) => {
+          const div = document.createElement('div'); div.className = 'price-item';
+          div.innerHTML = `<span>${item.name}</span><input type="number" id="pubg_code_${i}" value="${item.price}" step="100">`;
+          container.appendChild(div);
+        });
+      }
+      
       document.getElementById('priceModal').classList.add('show');
-    } else { alert('Price data not loaded yet.'); }
+    }
+    else {
+      alert('Price data not loaded yet. Please refresh.');
+    }
   }
 
   function saveAllPrices() {
     if (currentPriceGame === 'Mobile Legend' && mlPrices) {
       if (document.getElementById('ml_weekly')) mlPrices.weeklyPass.price = parseInt(document.getElementById('ml_weekly').value);
-      mlPrices.firstRecharge?.forEach((_, i) => { const input = document.getElementById(`ml_fr_${i}`); if (input) mlPrices.firstRecharge[i].price = parseInt(input.value); });
-      mlPrices.otherDiamonds?.forEach((_, i) => { const input = document.getElementById(`ml_od_${i}`); if (input) mlPrices.otherDiamonds[i].price = parseInt(input.value); });
+      if (mlPrices.firstRecharge) {
+        mlPrices.firstRecharge.forEach((_, i) => {
+          const input = document.getElementById(`ml_fr_${i}`);
+          if (input) mlPrices.firstRecharge[i].price = parseInt(input.value);
+        });
+      }
+      if (mlPrices.otherDiamonds) {
+        mlPrices.otherDiamonds.forEach((_, i) => {
+          const input = document.getElementById(`ml_od_${i}`);
+          if (input) mlPrices.otherDiamonds[i].price = parseInt(input.value);
+        });
+      }
       db.ref('prices/mobile_legend').set(mlPrices).then(() => alert('Mobile Legend prices updated!'));
-    } else if (currentPriceGame === 'Pubg' && pubgPrices) {
-      pubgPrices.uc?.forEach((_, i) => { const input = document.getElementById(`pubg_uc_${i}`); if (input) pubgPrices.uc[i].price = parseInt(input.value); });
-      pubgPrices.code?.forEach((_, i) => { const input = document.getElementById(`pubg_code_${i}`); if (input) pubgPrices.code[i].price = parseInt(input.value); });
+    } 
+    else if (currentPriceGame === 'Pubg' && pubgPrices) {
+      if (pubgPrices.uc) {
+        pubgPrices.uc.forEach((_, i) => {
+          const input = document.getElementById(`pubg_uc_${i}`);
+          if (input) pubgPrices.uc[i].price = parseInt(input.value);
+        });
+      }
+      if (pubgPrices.code) {
+        pubgPrices.code.forEach((_, i) => {
+          const input = document.getElementById(`pubg_code_${i}`);
+          if (input) pubgPrices.code[i].price = parseInt(input.value);
+        });
+      }
       db.ref('prices/pubg').set(pubgPrices).then(() => alert('PUBG prices updated!'));
     }
     document.getElementById('priceModal').classList.remove('show');
   }
 
+  // --- Load Messages ---
   function loadMessages() {
     db.ref('chats').on('value', (snapshot) => {
       allMessages = [];
