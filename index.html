@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dia Zone - Admin Portal</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1e1b2e 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    .container {
+      max-width: 450px;
+      width: 100%;
+      text-align: center;
+    }
+    .logo {
+      margin-bottom: 2rem;
+    }
+    .logo i {
+      font-size: 4rem;
+      color: #ef4444;
+    }
+    .logo h1 {
+      color: white;
+      font-size: 2rem;
+      margin-top: 0.5rem;
+    }
+    .logo span {
+      color: #ef4444;
+      font-size: 0.9rem;
+      background: rgba(239,68,68,0.2);
+      padding: 0.2rem 0.8rem;
+      border-radius: 2rem;
+      display: inline-block;
+      margin-top: 0.5rem;
+    }
+    .card {
+      background: #1e293b;
+      border-radius: 1.5rem;
+      padding: 2rem;
+      border: 1px solid #334155;
+      margin-bottom: 1rem;
+    }
+    .card h2 {
+      color: white;
+      margin-bottom: 0.5rem;
+    }
+    .card p {
+      color: #94a3b8;
+      margin-bottom: 1.5rem;
+      font-size: 0.85rem;
+    }
+    .btn {
+      display: inline-block;
+      padding: 0.8rem 2rem;
+      border-radius: 2rem;
+      text-decoration: none;
+      font-weight: 600;
+      transition: 0.2s;
+      width: 100%;
+      text-align: center;
+    }
+    .btn-admin {
+      background: #ef4444;
+      color: white;
+    }
+    .btn-admin:hover {
+      background: #dc2626;
+    }
+    .warning {
+      background: rgba(239,68,68,0.15);
+      border: 1px solid rgba(239,68,68,0.3);
+      border-radius: 1rem;
+      padding: 1rem;
+      margin-top: 1.5rem;
+    }
+    .warning i {
+      color: #fbbf24;
+      margin-right: 0.5rem;
+    }
+    .warning p {
+      color: #94a3b8;
+      font-size: 0.75rem;
+    }
+    .footer {
+      margin-top: 2rem;
+      color: #64748b;
+      font-size: 0.7rem;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="logo">
+    <i class="fas fa-user-shield"></i>
+    <h1>Admin Portal</h1>
+    <span>Restricted Access</span>
+  </div>
+  
+  <div class="card">
+    <h2>Dia Zone Management</h2>
+    <p>Manage users, orders, top-ups, and game prices</p>
+    <a href="admin-login.html" class="btn btn-admin">Login to Admin Panel</a>
+  </div>
+  
+  <div class="warning">
+    <i class="fas fa-exclamation-triangle"></i>
+    <p>This area is for authorized administrators only.<br>Unauthorized access is prohibited.</p>
+  </div>
+  
+  <div class="footer">
+    © 2024 Dia Zone. Admin Portal.
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js"></script>
+</body>
+</html>

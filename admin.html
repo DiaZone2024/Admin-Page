@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>Admin Panel</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: #0f172a; min-height: 100vh; }
+    .admin-container { max-width: 1400px; margin: 0 auto; padding: 1rem; }
+    
+    /* Header */
+    .admin-header { background: linear-gradient(135deg, #1e293b, #0f172a); padding: 1rem 1.5rem; border-radius: 1rem; display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border: 1px solid #334155; }
+    .logo h1 { color: #3b82f6; font-size: 1.5rem; }
+    .logo span { color: #94a3b8; font-size: 0.8rem; }
+    .admin-info { display: flex; align-items: center; gap: 1rem; color: #fff; }
+    .logout-btn { background: #ef4444; color: white; border: none; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer; font-weight: 600; transition: 0.2s; }
+    .logout-btn:hover { background: #dc2626; }
+    
+    /* Stats Cards */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+    .stat-card { background: #1e293b; border-radius: 1rem; padding: 1.2rem; border: 1px solid #334155; cursor: pointer; transition: all 0.2s; }
+    .stat-card:hover { transform: translateY(-3px); background: #334155; }
+    .stat-card i { font-size: 2rem; color: #3b82f6; margin-bottom: 0.5rem; }
+    .stat-card h3 { color: #94a3b8; font-size: 0.85rem; margin-bottom: 0.5rem; }
+    .stat-card .number { font-size: 2rem; font-weight: 700; color: white; }
+    
+    /* Tabs */
+    .tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .tab-btn { background: #1e293b; border: none; padding: 0.7rem 1.5rem; border-radius: 2rem; color: #94a3b8; cursor: pointer; font-weight: 600; transition: 0.2s; }
+    .tab-btn.active { background: #3b82f6; color: white; }
+    .tab-btn:hover:not(.active) { background: #334155; color: white; }
+    .tab-content { display: none; background: #1e293b; border-radius: 1rem; padding: 1.5rem; border: 1px solid #334155; }
+    .tab-content.active { display: block; }
+    
+    /* Tables */
+    .table-wrapper { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 0.8rem; text-align: left; border-bottom: 1px solid #334155; color: #e2e8f0; }
+    th { color: #3b82f6; font-weight: 600; }
+    
+    /* Status Badges */
+    .status-pending { background: #f59e0b; color: #1e293b; padding: 0.2rem 0.6rem; border-radius: 1rem; font-size: 0.7rem; font-weight: 600; display: inline-block; }
+    .status-completed { background: #10b981; color: white; padding: 0.2rem 0.6rem; border-radius: 1rem; font-size: 0.7rem; font-weight: 600; display: inline-block; }
+    .status-rejected { background: #ef4444; color: white; padding: 0.2rem 0.6rem; border-radius: 1rem; font-size: 0.7rem; font-weight: 600; display: inline-block; }
+    .status-approved { background: #10b981; color: white; padding: 0.2rem 0.6rem; border-radius: 1rem; font-size: 0.7rem; font-weight: 600; display: inline-block; }
+    .status-verified { background: #10b981; color: white; padding: 0.2rem 0.6rem; border-radius: 1rem; font-size: 0.7rem; font-weight: 600; display: inline-block; }
+    .status-suspended { background: #ef4444; color: white; padding: 0.2rem 0.6rem; border-radius: 1rem; font-size: 0.7rem; font-weight: 600; display: inline-block; }
+    
+    /* Buttons */
+    .approve-btn { background: #10b981; border: none; padding: 0.3rem 0.8rem; border-radius: 0.5rem; color: white; cursor: pointer; margin-right: 0.5rem; transition: 0.2s; }
+    .approve-btn:hover { background: #059669; }
+    .reject-btn { background: #ef4444; border: none; padding: 0.3rem 0.8rem; border-radius: 0.5rem; color: white; cursor: pointer; transition: 0.2s; }
+    .reject-btn:hover { background: #dc2626; }
+    .btn-add-balance { background: #10b981; border: none; padding: 0.3rem 0.8rem; border-radius: 0.5rem; color: white; cursor: pointer; margin-right: 0.3rem; }
+    .btn-remove-balance { background: #ef4444; border: none; padding: 0.3rem 0.8rem; border-radius: 0.5rem; color: white; cursor: pointer; margin-right: 0.3rem; }
+    .btn-ban { background: #f59e0b; border: none; padding: 0.3rem 0.8rem; border-radius: 0.5rem; color: white; cursor: pointer; margin-right: 0.3rem; }
+    .btn-unban { background: #3b82f6; border: none; padding: 0.3rem 0.8rem; border-radius: 0.5rem; color: white; cursor: pointer; }
+    .edit-price-btn { background: #3b82f6; border: none; padding: 0.3rem 0.8rem; border-radius: 0.5rem; color: white; cursor: pointer; }
+    
+    /* User Card */
+    .users-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1rem; }
+    .user-card { background: #0f172a; border-radius: 1rem; padding: 1rem; border: 1px solid #334155; transition: 0.2s; }
+    .user-card:hover { transform: translateY(-2px); border-color: #3b82f6; }
+    .user-card h4 { color: white; margin-bottom: 0.5rem; }
+    .user-card p { color: #94a3b8; font-size: 0.8rem; margin: 0.3rem 0; }
+    .user-actions { display: flex; gap: 0.5rem; margin-top: 0.8rem; flex-wrap: wrap; }
+    
+    /* Request Cards */
+    .requests-grid { display: flex; flex-direction: column; gap: 1rem; }
+    .request-card { background: #0f172a; border-radius: 1rem; padding: 1rem; border: 1px solid #334155; transition: 0.2s; }
+    .request-card:hover { border-color: #3b82f6; }
+    .request-card h4 { color: white; margin-bottom: 0.5rem; }
+    .request-card p { color: #94a3b8; font-size: 0.8rem; margin: 0.3rem 0; }
+    
+    /* Games List */
+    .games-list { display: flex; flex-direction: column; gap: 0.5rem; }
+    .game-item { display: flex; justify-content: space-between; align-items: center; padding: 0.8rem; background: #0f172a; border-radius: 0.8rem; border: 1px solid #334155; }
+    .game-name { color: white; font-weight: 500; }
+    
+    /* Messages */
+    .messages-list { display: flex; flex-direction: column; gap: 1rem; max-height: 500px; overflow-y: auto; }
+    .message-card { background: #0f172a; border-radius: 1rem; padding: 1rem; border: 1px solid #334155; }
+    .message-card .user-name { color: #3b82f6; font-weight: 600; }
+    .message-card .message-text { color: #e2e8f0; margin-top: 0.5rem; }
+    .reply-area { display: flex; gap: 0.5rem; margin-top: 0.8rem; }
+    .reply-area input { flex: 1; padding: 0.6rem 1rem; border-radius: 2rem; border: 1px solid #334155; background: #1e293b; color: white; }
+    .reply-area button { background: #3b82f6; border: none; padding: 0.6rem 1.2rem; border-radius: 2rem; color: white; cursor: pointer; }
+    
+    /* Modal */
+    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; }
+    .modal.show { display: flex; }
+    .modal-content { background: #1e293b; border-radius: 1rem; padding: 1.5rem; width: 90%; max-width: 600px; max-height: 80vh; overflow-y: auto; color: white; border: 1px solid #334155; }
+    .modal-content h3 { margin-bottom: 1rem; }
+    .modal-content h4 { margin-top: 0.8rem; margin-bottom: 0.5rem; color: #3b82f6; }
+    .modal-content input { width: 100%; padding: 0.8rem; margin: 0.5rem 0; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 0.5rem; }
+    .modal-buttons { display: flex; gap: 10px; margin-top: 1rem; }
+    .modal-buttons button { flex: 1; padding: 0.8rem; border-radius: 0.5rem; border: none; cursor: pointer; font-weight: 600; }
+    .save-btn { background: #3b82f6; color: white; }
+    .cancel-btn { background: #475569; color: white; }
+    .badge { background: #ef4444; color: white; border-radius: 50%; padding: 0.2rem 0.5rem; font-size: 0.7rem; margin-left: 0.5rem; }
+    .empty-state { text-align: center; color: #64748b; padding: 2rem; }
+    
+    /* Price Edit Items */
+    .price-item { display: flex; justify-content: space-between; align-items: center; padding: 0.6rem; border-bottom: 1px solid #334155; }
+    .price-item:last-child { border-bottom: none; }
+    .price-item span { flex: 1; }
+    .price-item input { width: 140px; margin: 0; }
+  </style>
+</head>
+<body>
+
+<div class="admin-container">
+  <div class="admin-header">
+    <div class="logo"><h1>Dia Zone <span>Admin Panel</span></h1></div>
+    <div class="admin-info"><span><i class="fas fa-user-shield"></i> Admin</span><button class="logout-btn" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</button></div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card" data-tab="users"><i class="fas fa-users"></i><h3>Total Users</h3><div class="number" id="totalUsers">0</div></div>
+    <div class="stat-card" data-tab="games"><i class="fas fa-gamepad"></i><h3>Total Games</h3><div class="number" id="totalGames">0</div></div>
+    <div class="stat-card" data-tab="orders"><i class="fas fa-shopping-bag"></i><h3>Pending Orders</h3><div class="number" id="pendingOrders">0</div></div>
+    <div class="stat-card" data-tab="topups"><i class="fas fa-plus-circle"></i><h3>Pending Topups</h3><div class="number" id="pendingTopups">0</div></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="orders">📦 Orders <span id="orderBadge" class="badge">0</span></button>
+    <button class="tab-btn" data-tab="topups">💰 Top Ups <span id="topupBadge" class="badge">0</span></button>
+    <button class="tab-btn" data-tab="users">👥 Users</button>
+    <button class="tab-btn" data-tab="games">🎮 Games</button>
+    <button class="tab-btn" data-tab="messages">💬 Messages</button>
+  </div>
+
+  <!-- Orders Tab -->
+  <div id="ordersTab" class="tab-content active">
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>User</th><th>Product</th><th>Amount</th><th>Game ID</th><th>Server/IGN</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="ordersList"></tbody>
+      </table>
+    </div>
+  </div>
+  
+  <!-- Topups Tab -->
+  <div id="topupsTab" class="tab-content">
+    <div class="requests-grid" id="topupRequestsList"></div>
+  </div>
+  
+  <!-- Users Tab -->
+  <div id="usersTab" class="tab-content">
+    <div class="users-grid" id="usersGrid"></div>
+  </div>
+  
+  <!-- Games Tab -->
+  <div id="gamesTab" class="tab-content">
+    <div class="games-list" id="gamesList"></div>
+  </div>
+  
+  <!-- Messages Tab -->
+  <div id="messagesTab" class="tab-content">
+    <div class="messages-list" id="messagesList"></div>
+  </div>
+</div>
+
+<!-- Balance Modal -->
+<div id="balanceModal" class="modal">
+  <div class="modal-content">
+    <h3 id="modalTitle">Add Balance</h3>
+    <input type="number" id="amountInput" placeholder="Enter amount">
+    <div class="modal-buttons">
+      <button class="cancel-btn" id="closeBalanceModal">Cancel</button>
+      <button class="save-btn" id="confirmBalanceBtn">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- Price Edit Modal -->
+<div id="priceModal" class="modal">
+  <div class="modal-content">
+    <h3 id="priceModalTitle">Edit Prices</h3>
+    <div id="priceListContainer"></div>
+    <div class="modal-buttons">
+      <button class="cancel-btn" id="closePriceModal">Cancel</button>
+      <button class="save-btn" id="savePriceBtn">Save All Changes</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // --- Firebase Configuration ---
+  const firebaseConfig = {
+    apiKey: "AIzaSyB8iE6D3N7X7qZxR9kLmNpQrStUvWxYz123456",
+    authDomain: "dia-zone.firebaseapp.com",
+    databaseURL: "https://dia-zone-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "dia-zone",
+    storageBucket: "dia-zone.appspot.com",
+    messagingSenderId: "123456789012",
+    appId: "1:123456789012:web:abc123def456ghi789"
+  };
+
+  if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  // --- Admin Auth Check ---
+  function checkAdminAuth() {
+    const adminData = sessionStorage.getItem('adminLoggedIn');
+    if (!adminData) { window.location.href = 'admin-login.html'; return false; }
+    try {
+      const data = JSON.parse(adminData);
+      if (!data.loggedIn || Date.now() > new Date(data.expiryTime)) {
+        sessionStorage.removeItem('adminLoggedIn');
+        window.location.href = 'admin-login.html';
+        return false;
+      }
+      return true;
+    } catch(e) { window.location.href = 'admin-login.html'; return false; }
+  }
+  if (!checkAdminAuth()) {}
+
+  // --- Data Variables ---
+  let allOrders = [], allTopups = [], allUsers = [], allGames = [], allMessages = [];
+  let currentPriceGame = null;
+  let mlPrices = null, pubgPrices = null;
+
+  // --- Helper Functions ---
+  function escapeHtml(text) { if (!text) return ''; const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
+  function formatNumber(num) { return (num || 0).toLocaleString(); }
+  function formatDate(dateString) { if (!dateString) return 'N/A'; try { return new Date(dateString).toLocaleString(); } catch(e) { return dateString; } }
+
+  // --- Load Orders ---
+  function loadOrders() {
+    db.ref('orders').on('value', (snapshot) => {
+      allOrders = [];
+      snapshot.forEach(child => { const order = child.val(); order.id = child.key; allOrders.push(order); });
+      renderOrders();
+      updateStats();
+    });
+  }
+
+  function renderOrders() {
+    const tbody = document.getElementById('ordersList');
+    if (!tbody) return;
+    if (allOrders.length === 0) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">No orders yet</td></table>'; return; }
+    tbody.innerHTML = '';
+    [...allOrders].reverse().forEach(order => {
+      const statusClass = order.status === 'Pending' ? 'status-pending' : (order.status === 'Completed' ? 'status-completed' : 'status-rejected');
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${escapeHtml(order.userName)}</td>
+        <td>${escapeHtml(order.product)}</td>
+        <td>${formatNumber(order.amount)} Ks</td>
+        <td>${escapeHtml(order.gameId || order.pubgId || 'N/A')}</td>
+        <td>${escapeHtml(order.serverId || order.ignName || 'N/A')}</td>
+        <td>${formatDate(order.orderDateDisplay)}</td>
+        <td><span class="${statusClass}">${order.status || 'Pending'}</span></td>
+        <td>${order.status === 'Pending' ? `<button class="approve-btn" data-id="${order.id}" data-type="order">Approve</button><button class="reject-btn" data-id="${order.id}" data-type="order">Reject</button>` : 'Done'}</td>
+      `;
+      tbody.appendChild(row);
+    });
+    document.querySelectorAll('.approve-btn[data-type="order"]').forEach(btn => btn.addEventListener('click', () => db.ref('orders/' + btn.dataset.id).update({ status: 'Completed' })));
+    document.querySelectorAll('.reject-btn[data-type="order"]').forEach(btn => btn.addEventListener('click', () => db.ref('orders/' + btn.dataset.id).update({ status: 'Rejected' })));
+  }
+
+  // --- Load Topups (with Balance Update on Approve) ---
+  function loadTopups() {
+    db.ref('topups').on('value', (snapshot) => {
+      allTopups = [];
+      snapshot.forEach(child => { const topup = child.val(); topup.id = child.key; allTopups.push(topup); });
+      renderTopups();
+      updateStats();
+    });
+  }
+
+  function renderTopups() {
+    const container = document.getElementById('topupRequestsList');
+    if (!container) return;
+    const pendingTopups = allTopups.filter(t => t.status === 'Pending');
+    if (pendingTopups.length === 0) { container.innerHTML = '<div class="empty-state">No pending topup requests</div>'; return; }
+    container.innerHTML = '';
+    pendingTopups.forEach(topup => {
+      const card = document.createElement('div'); card.className = 'request-card';
+      card.innerHTML = `
+        <h4><i class="fas fa-coins"></i> ${formatNumber(topup.amount)} Ks Request</h4>
+        <p><i class="fas fa-user"></i> User: ${escapeHtml(topup.userName)}</p>
+        <p><i class="fas fa-phone"></i> Phone: ${escapeHtml(topup.userPhone)}</p>
+        <p><i class="fas fa-receipt"></i> Receipt: ${escapeHtml(topup.receiptId)}</p>
+        <p><i class="far fa-calendar"></i> Date: ${formatDate(topup.requestDateDisplay)}</p>
+        <div class="user-actions">
+          <button class="approve-topup-btn" data-id="${topup.id}" data-amount="${topup.amount}" data-userid="${topup.userId}">Approve</button>
+          <button class="reject-topup-btn" data-id="${topup.id}">Reject</button>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+    
+    // Approve Topup - Update user balance
+    document.querySelectorAll('.approve-topup-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        const amount = parseInt(btn.dataset.amount);
+        const userId = btn.dataset.userid;
+        
+        try {
+          // 1. Update topup status to Approved
+          await db.ref('topups/' + id).update({ status: 'Approved' });
+          
+          // 2. Get current user balance and add amount
+          const userSnapshot = await db.ref('users/' + userId).once('value');
+          const currentBalance = userSnapshot.val()?.balance || 0;
+          const newBalance = currentBalance + amount;
+          
+          // 3. Update user balance
+          await db.ref('users/' + userId).update({ balance: newBalance });
+          
+          console.log(`Topup approved: Added ${amount} to user ${userId}. New balance: ${newBalance}`);
+          alert(`Topup approved! Added ${amount} Ks to user balance.`);
+          
+          // Refresh the list
+          renderTopups();
+          renderUsers();
+          updateStats();
+        } catch (error) {
+          console.error('Error approving topup:', error);
+          alert('Error approving topup. Please try again.');
+        }
+      });
+    });
+    
+    // Reject Topup
+    document.querySelectorAll('.reject-topup-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.id;
+        db.ref('topups/' + id).update({ status: 'Rejected' });
+        alert('Topup request rejected.');
+        renderTopups();
+        updateStats();
+      });
+    });
+  }
+
+// --- Load Users (with Ban/Unban) ---
+  function loadUsers() {
+    db.ref('users').on('value', (snapshot) => {
+      allUsers = [];
+      snapshot.forEach(child => { const user = child.val(); user.id = child.key; allUsers.push(user); });
+      renderUsers();
+      updateStats();
+    });
+  }
+
+  function renderUsers() {
+    const grid = document.getElementById('usersGrid');
+    if (!grid) return;
+    if (allUsers.length === 0) { grid.innerHTML = '<div class="empty-state">No users found</div>'; return; }
+    grid.innerHTML = '';
+    allUsers.forEach(user => {
+      const isSuspended = user.status === 'Suspended';
+      const card = document.createElement('div'); card.className = 'user-card';
+      card.innerHTML = `
+        <h4><i class="fas fa-user-circle"></i> ${escapeHtml(user.name)}</h4>
+        <p><i class="fas fa-phone"></i> ${escapeHtml(user.phone)}</p>
+        <p><i class="fas fa-envelope"></i> ${escapeHtml(user.email)}</p>
+        <p><i class="fas fa-coins"></i> Balance: ${formatNumber(user.balance)} Ks</p>
+        <p>Status: <span class="${isSuspended ? 'status-suspended' : 'status-verified'}">${user.status || 'Verified'}</span></p>
+        <div class="user-actions">
+          <button class="btn-add-balance" data-id="${user.id}">Add Balance</button>
+          <button class="btn-remove-balance" data-id="${user.id}">Remove Balance</button>
+          ${isSuspended ? `<button class="btn-unban" data-id="${user.id}">Unban User</button>` : `<button class="btn-ban" data-id="${user.id}">Ban User</button>`}
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+    document.querySelectorAll('.btn-add-balance').forEach(btn => btn.addEventListener('click', () => openBalanceModal(btn.dataset.id, 'add')));
+    document.querySelectorAll('.btn-remove-balance').forEach(btn => btn.addEventListener('click', () => openBalanceModal(btn.dataset.id, 'remove')));
+    document.querySelectorAll('.btn-ban').forEach(btn => btn.addEventListener('click', () => db.ref('users/' + btn.dataset.id).update({ status: 'Suspended' })));
+    document.querySelectorAll('.btn-unban').forEach(btn => btn.addEventListener('click', () => db.ref('users/' + btn.dataset.id).update({ status: 'Verified' })));
+  }
+
+  let currentUserId = null, currentBalanceMode = null;
+  function openBalanceModal(userId, mode) { currentUserId = userId; currentBalanceMode = mode; document.getElementById('modalTitle').innerText = mode === 'add' ? 'Add Balance' : 'Remove Balance'; document.getElementById('amountInput').value = ''; document.getElementById('balanceModal').classList.add('show'); }
+  function closeBalanceModal() { document.getElementById('balanceModal').classList.remove('show'); }
+  function processBalance() { const amount = parseInt(document.getElementById('amountInput').value); if (isNaN(amount) || amount <= 0) { alert('Please enter valid amount'); return; } db.ref('users/' + currentUserId).transaction(current => currentBalanceMode === 'add' ? (current || 0) + amount : (current || 0) - amount); closeBalanceModal(); }
+
+  // --- Load Games ---
+  function loadGames() {
+    db.ref('games').on('value', (snapshot) => {
+      allGames = [];
+      snapshot.forEach(child => { const game = child.val(); game.id = child.key; allGames.push(game); });
+      renderGames();
+      updateStats();
+    });
+  }
+
+  function renderGames() {
+    const container = document.getElementById('gamesList');
+    if (!container) return;
+    if (allGames.length === 0) { container.innerHTML = '<div class="empty-state">No games available. Add games in Firebase "games" node.</div>'; return; }
+    container.innerHTML = '';
+    allGames.forEach(game => {
+      const div = document.createElement('div'); div.className = 'game-item';
+      div.innerHTML = `<span class="game-name"><i class="fas fa-gamepad"></i> ${escapeHtml(game.name)}</span><button class="edit-price-btn" data-game="${escapeHtml(game.name)}">Edit Price</button>`;
+      container.appendChild(div);
+    });
+    document.querySelectorAll('.edit-price-btn').forEach(btn => btn.addEventListener('click', () => openPriceModal(btn.dataset.game)));
+  }
+
+  // --- Load Prices ---
+  function loadPrices() {
+    db.ref('prices/mobile_legend').on('value', snap => { if (snap.exists()) mlPrices = snap.val(); });
+    db.ref('prices/pubg').on('value', snap => { if (snap.exists()) pubgPrices = snap.val(); });
+  }
+
+  // --- Open Price Modal ---
+  function openPriceModal(gameName) {
+    currentPriceGame = gameName;
+    const container = document.getElementById('priceListContainer');
+    container.innerHTML = '';
+    
+    if (gameName === 'Mobile Legend' && mlPrices) {
+      document.getElementById('priceModalTitle').innerHTML = `<i class="fas fa-edit"></i> Edit Prices - ${gameName}`;
+      
+      const wpDiv = document.createElement('div'); wpDiv.className = 'price-item';
+      wpDiv.innerHTML = `<span><strong>Weekly Pass</strong></span><input type="number" id="ml_weekly" value="${mlPrices.weeklyPass?.price || 6500}" step="100">`;
+      container.appendChild(wpDiv);
+      
+      const frTitle = document.createElement('h4'); frTitle.innerHTML = '2x Diamonds (First Recharge)'; container.appendChild(frTitle);
+      mlPrices.firstRecharge?.forEach((item, i) => {
+        const div = document.createElement('div'); div.className = 'price-item';
+        div.innerHTML = `<span>${item.diamonds}</span><input type="number" id="ml_fr_${i}" value="${item.price}" step="100">`;
+        container.appendChild(div);
+      });
+      
+      const odTitle = document.createElement('h4'); odTitle.innerHTML = 'Other Diamonds'; container.appendChild(odTitle);
+      mlPrices.otherDiamonds?.forEach((item, i) => {
+        const div = document.createElement('div'); div.className = 'price-item';
+        div.innerHTML = `<span>${item.diamonds} Diamonds</span><input type="number" id="ml_od_${i}" value="${item.price}" step="100">`;
+        container.appendChild(div);
+      });
+      
+      document.getElementById('priceModal').classList.add('show');
+    } 
+    else if (gameName === 'Pubg' && pubgPrices) {
+      document.getElementById('priceModalTitle').innerHTML = `<i class="fas fa-edit"></i> Edit Prices - ${gameName}`;
+      
+      const ucTitle = document.createElement('h4'); ucTitle.innerHTML = '💰 UC Top Up'; container.appendChild(ucTitle);
+      pubgPrices.uc?.forEach((item, i) => {
+        const div = document.createElement('div'); div.className = 'price-item';
+        div.innerHTML = `<span>${item.name}</span><input type="number" id="pubg_uc_${i}" value="${item.price}" step="100">`;
+        container.appendChild(div);
+      });
+      
+      const codeTitle = document.createElement('h4'); codeTitle.innerHTML = '🎫 Code Price'; container.appendChild(codeTitle);
+      pubgPrices.code?.forEach((item, i) => {
+        const div = document.createElement('div'); div.className = 'price-item';
+        div.innerHTML = `<span>${item.name}</span><input type="number" id="pubg_code_${i}" value="${item.price}" step="100">`;
+        container.appendChild(div);
+      });
+      
+      document.getElementById('priceModal').classList.add('show');
+    }
+    else {
+      alert('Price data not loaded yet. Please refresh.');
+    }
+  }
+
+  // --- Save All Prices ---
+  function saveAllPrices() {
+    if (currentPriceGame === 'Mobile Legend' && mlPrices) {
+      if (document.getElementById('ml_weekly')) mlPrices.weeklyPass.price = parseInt(document.getElementById('ml_weekly').value);
+      mlPrices.firstRecharge?.forEach((_, i) => { const input = document.getElementById(`ml_fr_${i}`); if (input) mlPrices.firstRecharge[i].price = parseInt(input.value); });
+      mlPrices.otherDiamonds?.forEach((_, i) => { const input = document.getElementById(`ml_od_${i}`); if (input) mlPrices.otherDiamonds[i].price = parseInt(input.value); });
+      db.ref('prices/mobile_legend').set(mlPrices).then(() => alert('Mobile Legend prices updated!'));
+    }
+    else if (currentPriceGame === 'Pubg' && pubgPrices) {
+      pubgPrices.uc?.forEach((_, i) => { const input = document.getElementById(`pubg_uc_${i}`); if (input) pubgPrices.uc[i].price = parseInt(input.value); });
+      pubgPrices.code?.forEach((_, i) => { const input = document.getElementById(`pubg_code_${i}`); if (input) pubgPrices.code[i].price = parseInt(input.value); });
+      db.ref('prices/pubg').set(pubgPrices).then(() => alert('PUBG prices updated!'));
+    }
+    document.getElementById('priceModal').classList.remove('show');
+  }
+
+  // --- Load Messages ---
+  function loadMessages() {
+    db.ref('chats').on('value', (snapshot) => {
+      allMessages = [];
+      snapshot.forEach(userChats => { const userId = userChats.key; userChats.forEach(msg => { const message = msg.val(); message.userId = userId; message.id = msg.key; allMessages.push(message); }); });
+      renderMessages();
+    });
+  }
+
+  function renderMessages() {
+    const container = document.getElementById('messagesList');
+    if (!container) return;
+    const userMessages = allMessages.filter(m => m.sender === 'user').reverse();
+    if (userMessages.length === 0) { container.innerHTML = '<div class="empty-state">No messages yet</div>'; return; }
+    container.innerHTML = '';
+    userMessages.forEach(msg => {
+      const div = document.createElement('div'); div.className = 'message-card';
+      div.innerHTML = `
+        <div><span class="user-name"><i class="fas fa-user"></i> ${escapeHtml(msg.userName || 'User')}</span> <small>${formatDate(msg.timestamp)}</small></div>
+        <div class="message-text">${escapeHtml(msg.text)}</div>
+        <div class="reply-area"><input type="text" id="reply_${msg.id}" placeholder="Type your reply..."><button class="reply-btn" data-id="${msg.id}" data-userid="${msg.userId}">Reply</button></div>
+      `;
+      container.appendChild(div);
+    });
+    document.querySelectorAll('.reply-btn').forEach(btn => btn.addEventListener('click', () => { const input = document.getElementById(`reply_${btn.dataset.id}`); const text = input.value.trim(); if (text) { db.ref('chats/' + btn.dataset.userId).push({ text: text, sender: 'admin', timestamp: Date.now(), userName: 'Admin' }); input.value = ''; } }));
+  }
+
+  // --- Update Stats ---
+  function updateStats() {
+    document.getElementById('totalUsers').innerText = allUsers.length;
+    document.getElementById('totalGames').innerText = allGames.length;
+    const pendingOrders = allOrders.filter(o => o.status === 'Pending').length;
+    document.getElementById('pendingOrders').innerText = pendingOrders;
+    document.getElementById('orderBadge').innerText = pendingOrders;
+    const pendingTopups = allTopups.filter(t => t.status === 'Pending').length;
+    document.getElementById('pendingTopups').innerText = pendingTopups;
+    document.getElementById('topupBadge').innerText = pendingTopups;
+  }
+
+  // --- Tab Switching ---
+  function switchTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+    document.getElementById(`${tabId}Tab`).classList.add('active');
+    document.querySelectorAll('.tab-btn').forEach(btn => { btn.classList.remove('active'); if (btn.dataset.tab === tabId) btn.classList.add('active'); });
+  }
+
+  // --- Event Listeners ---
+  document.querySelectorAll('.tab-btn').forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
+  document.querySelectorAll('.stat-card').forEach(card => card.addEventListener('click', () => switchTab(card.dataset.tab)));
+  document.getElementById('logoutBtn').addEventListener('click', () => { sessionStorage.removeItem('adminLoggedIn'); window.location.href = 'admin-login.html'; });
+  document.getElementById('closeBalanceModal').addEventListener('click', closeBalanceModal);
+  document.getElementById('confirmBalanceBtn').addEventListener('click', processBalance);
+  document.getElementById('closePriceModal').addEventListener('click', () => document.getElementById('priceModal').classList.remove('show'));
+  document.getElementById('savePriceBtn').addEventListener('click', saveAllPrices);
+  window.addEventListener('click', (e) => { if (e.target === document.getElementById('balanceModal')) closeBalanceModal(); if (e.target === document.getElementById('priceModal')) document.getElementById('priceModal').classList.remove('show'); });
+
+  // --- Initialize ---
+  loadOrders(); loadTopups(); loadUsers(); loadGames(); loadMessages(); loadPrices();
+</script>
+</body>
+</html>
