@@ -71,7 +71,7 @@
     .reply-area { display: flex; gap: 0.5rem; margin-top: 0.8rem; }
     .reply-area input { flex: 1; padding: 0.6rem 1rem; border-radius: 2rem; border: 1px solid rgba(255, 215, 0, 0.3); background: rgba(10, 12, 28, 0.7); color: white; }
     .reply-area button { background: linear-gradient(95deg, #FFC857, #FFAE2B); border: none; padding: 0.6rem 1.2rem; border-radius: 2rem; color: #12142e; cursor: pointer; font-weight: 600; }
-    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; }
+    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 1000; justify-content: center; align-items: center; }
     .modal.show { display: flex; }
     .modal-content { background: #1a1e3a; border-radius: 1rem; padding: 1.5rem; width: 90%; max-width: 500px; max-height: 85vh; overflow-y: auto; color: white; border: 1px solid rgba(255, 215, 0, 0.3); }
     .modal-content input { width: 100%; padding: 0.8rem; margin: 1rem 0; background: #0f122e; border: 1px solid rgba(255, 215, 0, 0.3); color: white; border-radius: 0.5rem; }
@@ -110,7 +110,7 @@
     <button class="tab-btn" data-tab="messages">💬 စာတိုများ</button>
   </div>
 
-  <div id="ordersTab" class="tab-content active"><div class="table-wrapper"><table><thead><tr><th>အသုံးပြုသူ</th><th>ပစ္စည်း</th><th>ပမာဏ</th><th>Game ID</th><th>Server</th><th>ရက်စွဲ</th><th>အခြေအနေ</th><th>လုပ်ဆောင်ချက်</th></tr></thead><tbody id="ordersList"></tbody></table></div></div>
+  <div id="ordersTab" class="tab-content active"><div class="table-wrapper"><table><thead><tr><th>အသုံးပြုသူ</th><th>ပစ္စည်း</th><th>ပမာဏ</th><th>Game ID</th><th>Server</th><th>ရက်စွဲ</th><th>အခြေအနေ</th><th>လုပ်ဆောင်ချက်</th></td></thead><tbody id="ordersList"></tbody></table></div></div>
   <div id="topupsTab" class="tab-content"><div id="topupRequestsList"></div></div>
   <div id="usersTab" class="tab-content"><div class="users-grid" id="usersGrid"></div></div>
   <div id="gamesTab" class="tab-content"><div class="games-list" id="gamesList"></div></div>
@@ -122,139 +122,140 @@
   <div class="modal-content"><h3 id="modalTitle">ငွေထည့်ရန်</h3><input type="number" id="amountInput" placeholder="ပမာဏထည့်ပါ (Ks)"><div class="modal-buttons"><button class="cancel-btn" id="closeBalanceModal">မလုပ်တော့ပါ</button><button class="save-btn" id="confirmBalanceBtn">အတည်ပြုမည်</button></div></div>
 </div>
 
-<!-- Price Modal with Save & Cancel Buttons -->
+<!-- Price Modal -->
 <div id="priceModal" class="modal">
   <div class="modal-content">
     <h3 id="priceModalTitle">ဈေးနှုန်းများ ပြင်ရန်</h3>
     <div id="priceListContainer" style="max-height: 400px; overflow-y: auto;"></div>
     <div class="modal-buttons">
-      <button class="cancel-btn" id="closePriceModal">မလုပ်တော့ပါ (Cancel)</button>
-      <button class="save-btn" id="savePriceBtn">သိမ်းမည် (Save)</button>
+      <button class="cancel-btn" id="closePriceModal">မလုပ်တော့ပါ</button>
+      <button class="save-btn" id="savePriceBtn">သိမ်းမည်</button>
     </div>
   </div>
 </div>
-
 <!-- Message User Modal -->
 <div id="messageUserModal" class="modal">
   <div class="modal-content"><h3><i class="fas fa-paper-plane"></i> အသုံးပြုသူထံ စာပို့ရန်</h3><input type="text" id="adminMessageInput" placeholder="စာသားရိုက်ထည့်ပါ..."><div class="modal-buttons"><button class="cancel-btn" id="closeMessageModal">မလုပ်တော့ပါ</button><button class="save-btn" id="sendMessageBtn">ပို့မည်</button></div></div>
 </div>
 
 <script>
-  // Firebase Configuration
-  const firebaseConfig = {
-    apiKey: "AIzaSyCZridqu0bhTRM5mzbRdfJxWic4xcG7rg4",
-    authDomain: "dia-zone.firebaseapp.com",
-    databaseURL: "https://dia-zone-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "dia-zone",
-    storageBucket: "dia-zone.firebasestorage.app",
-    messagingSenderId: "954378673786",
-    appId: "1:954378673786:web:fe6ab648f60eb5207665c3"
-  };
+// ==================== FIREBASE CONFIG ====================
+const firebaseConfig = {
+  apiKey: "AIzaSyCZridqu0bhTRM5mzbRdfJxWic4xcG7rg4",
+  authDomain: "dia-zone.firebaseapp.com",
+  databaseURL: "https://dia-zone-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "dia-zone",
+  storageBucket: "dia-zone.firebasestorage.app",
+  messagingSenderId: "954378673786",
+  appId: "1:954378673786:web:fe6ab648f60eb5207665c3"
+};
 
-  if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
-  // Admin Auth Check
-  function checkAdminAuth() {
-    const adminData = sessionStorage.getItem('adminLoggedIn');
-    if (!adminData) { window.location.href = 'admin-login.html'; return false; }
-    try {
-      const data = JSON.parse(adminData);
-      if (!data.loggedIn || Date.now() > new Date(data.expiryTime)) {
-        sessionStorage.removeItem('adminLoggedIn');
-        window.location.href = 'admin-login.html';
-        return false;
-      }
-      return true;
-    } catch(e) { window.location.href = 'admin-login.html'; return false; }
-  }
-  if (!checkAdminAuth()) {}
+// ==================== ADMIN AUTH CHECK ====================
+function checkAdminAuth() {
+  const adminData = sessionStorage.getItem('adminLoggedIn');
+  if (!adminData) { window.location.href = 'admin-login.html'; return false; }
+  try {
+    const data = JSON.parse(adminData);
+    if (!data.loggedIn || Date.now() > new Date(data.expiryTime)) {
+      sessionStorage.removeItem('adminLoggedIn');
+      window.location.href = 'admin-login.html';
+      return false;
+    }
+    return true;
+  } catch(e) { window.location.href = 'admin-login.html'; return false; }
+}
+if (!checkAdminAuth()) {}
 
-  let allOrders = [], allTopups = [], allUsers = [], allGames = [], allMessages = [];
-  let currentPriceGame = null;
-  let mlPrices = null, pubgPrices = null;
-  let currentUserId = null, currentBalanceMode = null;
-  let currentMessageUserId = null;
+// ==================== GLOBAL VARIABLES ====================
+let allOrders = [], allTopups = [], allUsers = [], allGames = [], allMessages = [];
+let currentPriceGame = null;
+let mlPrices = null, pubgPrices = null, premiumPrices = null, mcggPrices = null;
+let currentUserId = null, currentBalanceMode = null;
+let currentMessageUserId = null;
 
-  function escapeHtml(text) { if (!text) return ''; const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
-  function formatNumber(num) { return (num || 0).toLocaleString(); }
-  function formatDate(dateString) { if (!dateString) return 'N/A'; try { return new Date(dateString).toLocaleString(); } catch(e) { return dateString; } }
+// ==================== UTILITY FUNCTIONS ====================
+function escapeHtml(text) { if (!text) return ''; const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
+function formatNumber(num) { return (num || 0).toLocaleString(); }
+function formatDate(dateString) { if (!dateString) return 'N/A'; try { return new Date(dateString).toLocaleString(); } catch(e) { return dateString; } }
 
-  // Load Orders
-  function loadOrders() {
-    db.ref('orders').on('value', (snapshot) => {
-      allOrders = [];
-      snapshot.forEach(child => { const order = child.val(); order.id = child.key; allOrders.push(order); });
-      renderOrders(); updateStats();
-    });
-  }
+// ==================== ORDERS ====================
+function loadOrders() {
+  db.ref('orders').on('value', (snapshot) => {
+    allOrders = [];
+    snapshot.forEach(child => { const order = child.val(); order.id = child.key; allOrders.push(order); });
+    renderOrders(); updateStats();
+  });
+}
 
-  function renderOrders() {
-    const tbody = document.getElementById('ordersList');
-    if (!tbody) return;
-    if (allOrders.length === 0) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">အော်ဒါမရှိသေးပါ</td><\/tr>'; return; }
-    tbody.innerHTML = '';
-    [...allOrders].reverse().forEach(order => {
-      const statusClass = order.status === 'Pending' ? 'status-pending' : (order.status === 'Completed' ? 'status-completed' : 'status-pending');
-      const row = document.createElement('tr');
-      row.innerHTML = `<td>${escapeHtml(order.userName)}</td><td>${escapeHtml(order.product)}</td><td>${formatNumber(order.amount)} Ks</td><td>${escapeHtml(order.gameId || 'N/A')}</td><td>${escapeHtml(order.serverId || 'N/A')}</td><td>${formatDate(order.orderDateDisplay)}</td><td><span class="${statusClass}">${order.status || 'Pending'}</span></td><td>${order.status === 'Pending' ? `<button class="approve-btn" data-id="${order.id}" data-amount="${order.amount}" data-userid="${order.userId}">အတည်ပြုမည်</button><button class="reject-btn" data-id="${order.id}">ပယ်ချမည်</button>` : 'ပြီးဆုံးပြီ'}</td>`;
-      tbody.appendChild(row);
-    });
-    document.querySelectorAll('.approve-btn').forEach(btn => btn.addEventListener('click', () => approveOrder(btn.dataset.id, btn.dataset.amount, btn.dataset.userid)));
-    document.querySelectorAll('.reject-btn').forEach(btn => btn.addEventListener('click', () => rejectOrder(btn.dataset.id)));
-  }
+function renderOrders() {
+  const tbody = document.getElementById('ordersList');
+  if (!tbody) return;
+  if (allOrders.length === 0) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">အော်ဒါမရှိသေးပါ<\/td><\/tr>'; return; }
+  tbody.innerHTML = '';
+  [...allOrders].reverse().forEach(order => {
+    const statusClass = order.status === 'Pending' ? 'status-pending' : (order.status === 'Completed' ? 'status-completed' : 'status-pending');
+    const row = document.createElement('tr');
+    row.innerHTML = `<td>${escapeHtml(order.userName)}</td><td>${escapeHtml(order.product)}</td><td>${formatNumber(order.amount)} Ks</td><td>${escapeHtml(order.gameId || 'N/A')}</td><td>${escapeHtml(order.serverId || 'N/A')}</td><td>${formatDate(order.orderDateDisplay)}</td><td><span class="${statusClass}">${order.status || 'Pending'}</span></td><td>${order.status === 'Pending' ? '<button class="approve-btn" data-id="' + order.id + '" data-amount="' + order.amount + '" data-userid="' + order.userId + '">အတည်ပြုမည်</button><button class="reject-btn" data-id="' + order.id + '">ပယ်ချမည်</button>' : 'ပြီးဆုံးပြီ'}</td>`;
+    tbody.appendChild(row);
+  });
+  document.querySelectorAll('.approve-btn').forEach(btn => btn.addEventListener('click', () => approveOrder(btn.dataset.id, btn.dataset.amount, btn.dataset.userid)));
+  document.querySelectorAll('.reject-btn').forEach(btn => btn.addEventListener('click', () => rejectOrder(btn.dataset.id)));
+}
 
-  async function approveOrder(orderId, amount, userId) {
-    await db.ref('orders/' + orderId).update({ status: 'Completed' });
+async function approveOrder(orderId, amount, userId) {
+  await db.ref('orders/' + orderId).update({ status: 'Completed' });
+  const userSnap = await db.ref('users/' + userId).once('value');
+  const currentBalance = userSnap.val()?.balance || 0;
+  await db.ref('users/' + userId).update({ balance: currentBalance + parseInt(amount) });
+  renderOrders(); renderUsers(); updateStats();
+  alert('အော်ဒါအတည်ပြုပြီးပါပြီ။');
+}
+
+async function rejectOrder(orderId) {
+  await db.ref('orders/' + orderId).update({ status: 'Rejected' });
+  renderOrders(); updateStats();
+  alert('အော်ဒါအား ပယ်ချလိုက်ပါသည်။ (ငွေမဖြတ်ပါ)');
+}
+
+// ==================== TOPUPS ====================
+function loadTopups() {
+  db.ref('topups').on('value', (snapshot) => {
+    allTopups = [];
+    snapshot.forEach(child => { const topup = child.val(); topup.id = child.key; allTopups.push(topup); });
+    renderTopups(); updateStats();
+  });
+}
+
+function renderTopups() {
+  const container = document.getElementById('topupRequestsList');
+  if (!container) return;
+  const pendingTopups = allTopups.filter(t => t.status === 'Pending');
+  if (pendingTopups.length === 0) { container.innerHTML = '<div class="empty-state">ဆိုင်းငံ့ထားသော ငွေဖြည့်မှုမရှိပါ</div>'; return; }
+  container.innerHTML = '';
+  pendingTopups.forEach(topup => {
+    const card = document.createElement('div'); card.className = 'request-card';
+    card.innerHTML = '<h4><i class="fas fa-coins"></i> ' + formatNumber(topup.amount) + ' Ks ငွေဖြည့်ရန် တောင်းဆိုမှု</h4><p><i class="fas fa-user"></i> အသုံးပြုသူ: ' + escapeHtml(topup.userName) + '</p><p><i class="fas fa-phone"></i> ဖုန်း: ' + escapeHtml(topup.userPhone) + '</p><p><i class="fas fa-receipt"></i> ပြေစာ: ' + escapeHtml(topup.receiptId) + '</p><p><i class="far fa-calendar"></i> ရက်စွဲ: ' + formatDate(topup.requestDateDisplay) + '</p><div class="user-actions"><button class="approve-topup" data-id="' + topup.id + '" data-amount="' + topup.amount + '" data-userid="' + topup.userId + '">အတည်ပြုမည်</button><button class="reject-topup" data-id="' + topup.id + '">ပယ်ချမည်</button></div>';
+    container.appendChild(card);
+  });
+  document.querySelectorAll('.approve-topup').forEach(btn => btn.addEventListener('click', async () => {
+    const id = btn.dataset.id, amount = parseInt(btn.dataset.amount), userId = btn.dataset.userid;
+    await db.ref('topups/' + id).update({ status: 'Approved' });
     const userSnap = await db.ref('users/' + userId).once('value');
     const currentBalance = userSnap.val()?.balance || 0;
-    await db.ref('users/' + userId).update({ balance: currentBalance + parseInt(amount) });
-    renderOrders(); renderUsers(); updateStats();
-    alert('အော်ဒါအတည်ပြုပြီးပါပြီ။');
-  }
-
-  async function rejectOrder(orderId) {
-    await db.ref('orders/' + orderId).update({ status: 'Rejected' });
-    renderOrders(); updateStats();
-    alert('အော်ဒါအား ပယ်ချလိုက်ပါသည်။ (ငွေမဖြတ်ပါ)');
-  }
-
-  // Load Topups
-  function loadTopups() {
-    db.ref('topups').on('value', (snapshot) => {
-      allTopups = [];
-      snapshot.forEach(child => { const topup = child.val(); topup.id = child.key; allTopups.push(topup); });
-      renderTopups(); updateStats();
-    });
-  }
-
-  function renderTopups() {
-    const container = document.getElementById('topupRequestsList');
-    if (!container) return;
-    const pendingTopups = allTopups.filter(t => t.status === 'Pending');
-    if (pendingTopups.length === 0) { container.innerHTML = '<div class="empty-state">ဆိုင်းငံ့ထားသော ငွေဖြည့်မှုမရှိပါ</div>'; return; }
-    container.innerHTML = '';
-    pendingTopups.forEach(topup => {
-      const card = document.createElement('div'); card.className = 'request-card';
-      card.innerHTML = `<h4><i class="fas fa-coins"></i> ${formatNumber(topup.amount)} Ks ငွေဖြည့်ရန် တောင်းဆိုမှု</h4><p><i class="fas fa-user"></i> အသုံးပြုသူ: ${escapeHtml(topup.userName)}</p><p><i class="fas fa-phone"></i> ဖုန်း: ${escapeHtml(topup.userPhone)}</p><p><i class="fas fa-receipt"></i> ပြေစာ: ${escapeHtml(topup.receiptId)}</p><p><i class="far fa-calendar"></i> ရက်စွဲ: ${formatDate(topup.requestDateDisplay)}</p><div class="user-actions"><button class="approve-topup" data-id="${topup.id}" data-amount="${topup.amount}" data-userid="${topup.userId}">အတည်ပြုမည်</button><button class="reject-topup" data-id="${topup.id}">ပယ်ချမည်</button></div>`;
-      container.appendChild(card);
-    });
-    document.querySelectorAll('.approve-topup').forEach(btn => btn.addEventListener('click', async () => {
-      const id = btn.dataset.id, amount = parseInt(btn.dataset.amount), userId = btn.dataset.userid;
-      await db.ref('topups/' + id).update({ status: 'Approved' });
-      const userSnap = await db.ref('users/' + userId).once('value');
-      const currentBalance = userSnap.val()?.balance || 0;
-      await db.ref('users/' + userId).update({ balance: currentBalance + amount });
-      renderTopups(); renderUsers(); updateStats();
-      alert(`${amount.toLocaleString()} Ks ထည့်သွင်းပြီးပါပြီ။`);
-    }));
-    document.querySelectorAll('.reject-topup').forEach(btn => btn.addEventListener('click', async () => {
-      await db.ref('topups/' + btn.dataset.id).update({ status: 'Rejected' });
-      renderTopups(); updateStats();
-      alert('ငွေဖြည့်တောင်းဆိုမှုအား ပယ်ချလိုက်ပါသည်။');
-    }));
-  }
-    // Load Users
+    await db.ref('users/' + userId).update({ balance: currentBalance + amount });
+    renderTopups(); renderUsers(); updateStats();
+    alert(amount.toLocaleString() + ' Ks ထည့်သွင်းပြီးပါပြီ။');
+  }));
+  document.querySelectorAll('.reject-topup').forEach(btn => btn.addEventListener('click', async () => {
+    await db.ref('topups/' + btn.dataset.id).update({ status: 'Rejected' });
+    renderTopups(); updateStats();
+    alert('ငွေဖြည့်တောင်းဆိုမှုအား ပယ်ချလိုက်ပါသည်။');
+  }));
+}
+  // ==================== USERS ====================
   function loadUsers() {
     db.ref('users').on('value', (snapshot) => {
       allUsers = [];
@@ -271,7 +272,7 @@
     allUsers.forEach(user => {
       const isSuspended = user.status === 'Suspended';
       const card = document.createElement('div'); card.className = 'user-card';
-      card.innerHTML = `<h4><i class="fas fa-user-circle"></i> ${escapeHtml(user.name)}</h4><p><i class="fas fa-phone"></i> ${escapeHtml(user.phone)}</p><p><i class="fas fa-envelope"></i> ${escapeHtml(user.email)}</p><p><i class="fas fa-coins"></i> လက်ကျန်: ${formatNumber(user.balance)} Ks</p><p>အခြေအနေ: <span class="${isSuspended ? 'status-suspended' : 'status-verified'}">${user.status || 'Verified'}</span></p><div class="user-actions"><button class="btn-add-balance" data-id="${user.id}">ငွေထည့်မည်</button><button class="btn-remove-balance" data-id="${user.id}">ငွေဖြတ်မည်</button><button class="btn-message" data-id="${user.id}" data-name="${escapeHtml(user.name)}">စာပို့မည်</button>${isSuspended ? `<button class="btn-unban" data-id="${user.id}">Ban ဖြုတ်မည်</button>` : `<button class="btn-ban" data-id="${user.id}">Ban လုပ်မည်</button>`}<button class="btn-delete" data-id="${user.id}" data-name="${escapeHtml(user.name)}">ဖျက်မည်</button></div>`;
+      card.innerHTML = '<h4><i class="fas fa-user-circle"></i> ' + escapeHtml(user.name) + '</h4><p><i class="fas fa-phone"></i> ' + escapeHtml(user.phone) + '</p><p><i class="fas fa-envelope"></i> ' + escapeHtml(user.email) + '</p><p><i class="fas fa-coins"></i> လက်ကျန်: ' + formatNumber(user.balance) + ' Ks</p><p>အခြေအနေ: <span class="' + (isSuspended ? 'status-suspended' : 'status-verified') + '">' + (user.status || 'Verified') + '</span></p><div class="user-actions"><button class="btn-add-balance" data-id="' + user.id + '">ငွေထည့်မည်</button><button class="btn-remove-balance" data-id="' + user.id + '">ငွေဖြတ်မည်</button><button class="btn-message" data-id="' + user.id + '" data-name="' + escapeHtml(user.name) + '">စာပို့မည်</button>' + (isSuspended ? '<button class="btn-unban" data-id="' + user.id + '">Ban ဖြုတ်မည်</button>' : '<button class="btn-ban" data-id="' + user.id + '">Ban လုပ်မည်</button>') + '<button class="btn-delete" data-id="' + user.id + '" data-name="' + escapeHtml(user.name) + '">ဖျက်မည်</button></div>';
       grid.appendChild(card);
     });
     document.querySelectorAll('.btn-add-balance').forEach(btn => btn.addEventListener('click', () => openBalanceModal(btn.dataset.id, 'add')));
@@ -279,7 +280,7 @@
     document.querySelectorAll('.btn-ban').forEach(btn => btn.addEventListener('click', () => db.ref('users/' + btn.dataset.id).update({ status: 'Suspended' })));
     document.querySelectorAll('.btn-unban').forEach(btn => btn.addEventListener('click', () => db.ref('users/' + btn.dataset.id).update({ status: 'Verified' })));
     document.querySelectorAll('.btn-delete').forEach(btn => btn.addEventListener('click', async () => {
-      if (confirm(`${btn.dataset.name} ကို ဖျက်ပါမည်လား? ဖျက်လိုက်ပါက ပြန်လည် register လုပ်ရမည်။`)) {
+      if (confirm(btn.dataset.name + ' ကို ဖျက်ပါမည်လား? ဖျက်လိုက်ပါက ပြန်လည် register လုပ်ရမည်။')) {
         await db.ref('users/' + btn.dataset.id).remove();
         renderUsers(); updateStats();
         alert('အသုံးပြုသူအား ဖျက်ပြီးပါပြီ။');
@@ -304,9 +305,9 @@
     if (!userData) { alert('အသုံးပြုသူမရှိပါ'); closeBalanceModal(); return; }
     let currentBalance = userData.balance || 0;
     let newBalance = currentBalanceMode === 'add' ? currentBalance + amount : currentBalance - amount;
-    if (currentBalanceMode === 'remove' && currentBalance < amount) { alert(`လက်ကျန်ငွေ မလုံလောက်ပါ! လက်ကျန်: ${currentBalance.toLocaleString()} Ks`); return; }
+    if (currentBalanceMode === 'remove' && currentBalance < amount) { alert('လက်ကျန်ငွေ မလုံလောက်ပါ! လက်ကျန်: ' + currentBalance.toLocaleString() + ' Ks'); return; }
     await db.ref('users/' + currentUserId).update({ balance: newBalance });
-    alert(`ငွေ ${currentBalanceMode === 'add' ? 'ထည့်သွင်းမှု' : 'ဖြတ်တောက်မှု'} အောင်မြင်ပါသည်။\nလက်ကျန်ငွေ: ${newBalance.toLocaleString()} Ks`);
+    alert('ငွေ ' + (currentBalanceMode === 'add' ? 'ထည့်သွင်းမှု' : 'ဖြတ်တောက်မှု') + ' အောင်မြင်ပါသည်။\nလက်ကျန်ငွေ: ' + newBalance.toLocaleString() + ' Ks');
     closeBalanceModal();
     renderUsers();
     updateStats();
@@ -330,12 +331,17 @@
     alert('စာပို့ပြီးပါပြီ။');
     document.getElementById('messageUserModal').classList.remove('show');
   }
-
-  // Load Games
+    // ==================== GAMES ====================
   function loadGames() {
     db.ref('games').on('value', (snapshot) => {
       allGames = [];
-      snapshot.forEach(child => { const game = child.val(); game.id = child.key; allGames.push(game); });
+      snapshot.forEach(child => { 
+        const game = child.val(); 
+        game.id = child.key; 
+        if (game.name !== 'Genshin Impact' && game.name !== 'Free Fire') {
+          allGames.push(game);
+        }
+      });
       renderGames(); updateStats();
     });
   }
@@ -347,7 +353,7 @@
     container.innerHTML = '';
     allGames.forEach(game => {
       const div = document.createElement('div'); div.className = 'game-item';
-      div.innerHTML = `<span class="game-name"><i class="fas fa-gamepad"></i> ${escapeHtml(game.name)}</span><button class="edit-price-btn" data-game="${escapeHtml(game.name)}">ဈေးနှုန်းပြင်မည်</button>`;
+      div.innerHTML = '<span class="game-name"><i class="fas fa-gamepad"></i> ' + escapeHtml(game.name) + '</span><button class="edit-price-btn" data-game="' + escapeHtml(game.name) + '">ဈေးနှုန်းပြင်မည်</button>';
       container.appendChild(div);
     });
     document.querySelectorAll('.edit-price-btn').forEach(btn => btn.addEventListener('click', () => openPriceModal(btn.dataset.game)));
@@ -356,6 +362,8 @@
   function loadPrices() {
     db.ref('prices/mobile_legend').on('value', snap => { if (snap.exists()) mlPrices = snap.val(); });
     db.ref('prices/pubg').on('value', snap => { if (snap.exists()) pubgPrices = snap.val(); });
+    db.ref('prices/premium').on('value', snap => { if (snap.exists()) premiumPrices = snap.val(); });
+    db.ref('prices/mcgg').on('value', snap => { if (snap.exists()) mcggPrices = snap.val(); });
   }
 
   function openPriceModal(gameName) {
@@ -364,64 +372,52 @@
     container.innerHTML = '';
     
     if (gameName === 'Mobile Legend' && mlPrices) {
-      document.getElementById('priceModalTitle').innerHTML = `<i class="fas fa-edit"></i> ဈေးနှုန်းများပြင်ရန် - ${gameName}`;
-      
-      const wp = document.createElement('div'); 
-      wp.className = 'price-item'; 
-      wp.innerHTML = `<span><strong>အပတ်စဉ် ဖြတ်သန်းခ (Weekly Pass)</strong></span><input type="number" id="ml_weekly" value="${mlPrices.weeklyPass?.price || 6500}" step="100">`; 
-      container.appendChild(wp);
-      
-      const frTitle = document.createElement('h4'); 
-      frTitle.innerHTML = '✨ 2x Diamonds (First Recharge)'; 
-      container.appendChild(frTitle);
-      
-      mlPrices.firstRecharge?.forEach((item, i) => { 
-        const div = document.createElement('div'); 
-        div.className = 'price-item'; 
-        div.innerHTML = `<span>${item.diamonds} Diamonds</span><input type="number" id="ml_fr_${i}" value="${item.price}" step="100">`; 
-        container.appendChild(div); 
-      });
-      
-      const odTitle = document.createElement('h4'); 
-      odTitle.innerHTML = '💎 အခြားကျောက်မျက်များ'; 
-      container.appendChild(odTitle);
-      
-      mlPrices.otherDiamonds?.forEach((item, i) => { 
-        const div = document.createElement('div'); 
-        div.className = 'price-item'; 
-        div.innerHTML = `<span>${item.diamonds} Diamonds</span><input type="number" id="ml_od_${i}" value="${item.price}" step="100">`; 
-        container.appendChild(div); 
-      });
-      
+      document.getElementById('priceModalTitle').innerHTML = '<i class="fas fa-edit"></i> ဈေးနှုန်းများပြင်ရန် - ' + gameName;
+      const wp = document.createElement('div'); wp.className = 'price-item'; wp.innerHTML = '<span><strong>Weekly Pass</strong></span><input type="number" id="ml_weekly" value="' + (mlPrices.weeklyPass?.price || 6500) + '" step="100">'; container.appendChild(wp);
+      const frTitle = document.createElement('h4'); frTitle.innerHTML = '✨ 2x Diamonds (First Recharge)'; container.appendChild(frTitle);
+      mlPrices.firstRecharge?.forEach((item, i) => { const div = document.createElement('div'); div.className = 'price-item'; div.innerHTML = '<span>' + item.diamonds + ' Diamonds</span><input type="number" id="ml_fr_' + i + '" value="' + item.price + '" step="100">'; container.appendChild(div); });
+      const odTitle = document.createElement('h4'); odTitle.innerHTML = '💎 အခြားကျောက်မျက်များ'; container.appendChild(odTitle);
+      mlPrices.otherDiamonds?.forEach((item, i) => { const div = document.createElement('div'); div.className = 'price-item'; div.innerHTML = '<span>' + item.diamonds + ' Diamonds</span><input type="number" id="ml_od_' + i + '" value="' + item.price + '" step="100">'; container.appendChild(div); });
       document.getElementById('priceModal').classList.add('show');
-      
     } else if (gameName === 'Pubg' && pubgPrices) {
-      document.getElementById('priceModalTitle').innerHTML = `<i class="fas fa-edit"></i> ဈေးနှုန်းများပြင်ရန် - ${gameName}`;
-      
-      const ucTitle = document.createElement('h4'); 
-      ucTitle.innerHTML = '💰 UC ဖြည့်သွင်းခြင်း'; 
-      container.appendChild(ucTitle);
-      
-      pubgPrices.uc?.forEach((item, i) => { 
-        const div = document.createElement('div'); 
-        div.className = 'price-item'; 
-        div.innerHTML = `<span>${item.name}</span><input type="number" id="pubg_uc_${i}" value="${item.price}" step="100">`; 
-        container.appendChild(div); 
-      });
-      
-      const codeTitle = document.createElement('h4'); 
-      codeTitle.innerHTML = '🎫 ကုဒ်ဈေးနှုန်း (Code Price)'; 
-      container.appendChild(codeTitle);
-      
-      pubgPrices.code?.forEach((item, i) => { 
-        const div = document.createElement('div'); 
-        div.className = 'price-item'; 
-        div.innerHTML = `<span>${item.name}</span><input type="number" id="pubg_code_${i}" value="${item.price}" step="100">`; 
-        container.appendChild(div); 
-      });
-      
+      document.getElementById('priceModalTitle').innerHTML = '<i class="fas fa-edit"></i> ဈေးနှုန်းများပြင်ရန် - ' + gameName;
+      const ucTitle = document.createElement('h4'); ucTitle.innerHTML = '💰 UC ဖြည့်သွင်းခြင်း'; container.appendChild(ucTitle);
+      pubgPrices.uc?.forEach((item, i) => { const div = document.createElement('div'); div.className = 'price-item'; div.innerHTML = '<span>' + item.name + '</span><input type="number" id="pubg_uc_' + i + '" value="' + item.price + '" step="100">'; container.appendChild(div); });
+      const specialTitle = document.createElement('h4'); specialTitle.innerHTML = '✨ Special Items'; container.appendChild(specialTitle);
+      if (pubgPrices.special && pubgPrices.special.length > 0) {
+        pubgPrices.special.forEach((item, i) => { const div = document.createElement('div'); div.className = 'price-item'; div.innerHTML = '<span>' + item.name + '</span><input type="number" id="pubg_special_' + i + '" value="' + item.price + '" step="100">'; container.appendChild(div); });
+      }
       document.getElementById('priceModal').classList.add('show');
-      
+    } else if (gameName === 'Premium Service' && premiumPrices) {
+      document.getElementById('priceModalTitle').innerHTML = '<i class="fas fa-edit"></i> ဈေးနှုန်းများပြင်ရန် - ' + gameName;
+      const tpTitle = document.createElement('h4'); tpTitle.innerHTML = '📱 Telegram Premium'; container.appendChild(tpTitle);
+      if (premiumPrices.telegramPremium && premiumPrices.telegramPremium.length > 0) {
+        premiumPrices.telegramPremium.forEach((item, i) => { const div = document.createElement('div'); div.className = 'price-item'; div.innerHTML = '<span>' + item.name + '</span><input type="number" id="premium_tp_' + i + '" value="' + item.price + '" step="100">'; container.appendChild(div); });
+      }
+      const tsTitle = document.createElement('h4'); tsTitle.innerHTML = '⭐ Telegram Star'; container.appendChild(tsTitle);
+      if (premiumPrices.telegramStar && premiumPrices.telegramStar.length > 0) {
+        premiumPrices.telegramStar.forEach((item, i) => { const div = document.createElement('div'); div.className = 'price-item'; div.innerHTML = '<span>' + item.name + '</span><input type="number" id="premium_ts_' + i + '" value="' + item.price + '" step="100">'; container.appendChild(div); });
+      }
+      document.getElementById('priceModal').classList.add('show');
+    } else if (gameName === 'MCGG' && mcggPrices) {
+      document.getElementById('priceModalTitle').innerHTML = '<i class="fas fa-edit"></i> ဈေးနှုန်းများပြင်ရန် - ' + gameName;
+      const weeklyTitle = document.createElement('h4'); weeklyTitle.innerHTML = '📅 Weekly Card'; container.appendChild(weeklyTitle);
+      if (mcggPrices.weekly && mcggPrices.weekly.length > 0) {
+        mcggPrices.weekly.forEach((item, i) => { const div = document.createElement('div'); div.className = 'price-item'; div.innerHTML = '<span>' + item.name + '</span><input type="number" id="mcgg_weekly_' + i + '" value="' + item.price + '" step="100">'; container.appendChild(div); });
+      }
+      const eventTitle = document.createElement('h4'); eventTitle.innerHTML = '⚡ Event Items'; container.appendChild(eventTitle);
+      if (mcggPrices.event && mcggPrices.event.length > 0) {
+        mcggPrices.event.forEach((item, i) => { const div = document.createElement('div'); div.className = 'price-item'; div.innerHTML = '<span>' + item.name + '</span><input type="number" id="mcgg_event_' + i + '" value="' + item.price + '" step="100">'; container.appendChild(div); });
+      }
+      const doubleTitle = document.createElement('h4'); doubleTitle.innerHTML = '✨ 2x Diamonds (Double)'; container.appendChild(doubleTitle);
+      if (mcggPrices.double && mcggPrices.double.length > 0) {
+        mcggPrices.double.forEach((item, i) => { const div = document.createElement('div'); div.className = 'price-item'; div.innerHTML = '<span>' + item.name + ' Diamonds</span><input type="number" id="mcgg_double_' + i + '" value="' + item.price + '" step="100">'; container.appendChild(div); });
+      }
+      const standardTitle = document.createElement('h4'); standardTitle.innerHTML = '💎 Standard Diamonds'; container.appendChild(standardTitle);
+      if (mcggPrices.standard && mcggPrices.standard.length > 0) {
+        mcggPrices.standard.forEach((item, i) => { const div = document.createElement('div'); div.className = 'price-item'; div.innerHTML = '<span>' + item.name + '</span><input type="number" id="mcgg_standard_' + i + '" value="' + item.price + '" step="100">'; container.appendChild(div); });
+      }
+      document.getElementById('priceModal').classList.add('show');
     } else { 
       alert('ဈေးနှုန်းဒေတာ မရရှိသေးပါ။'); 
     }
@@ -429,39 +425,28 @@
 
   function saveAllPrices() {
     if (currentPriceGame === 'Mobile Legend' && mlPrices) {
-      if (document.getElementById('ml_weekly')) {
-        mlPrices.weeklyPass.price = parseInt(document.getElementById('ml_weekly').value);
-      }
-      mlPrices.firstRecharge?.forEach((_, i) => { 
-        const input = document.getElementById(`ml_fr_${i}`); 
-        if (input) mlPrices.firstRecharge[i].price = parseInt(input.value); 
-      });
-      mlPrices.otherDiamonds?.forEach((_, i) => { 
-        const input = document.getElementById(`ml_od_${i}`); 
-        if (input) mlPrices.otherDiamonds[i].price = parseInt(input.value); 
-      });
-      db.ref('prices/mobile_legend').set(mlPrices).then(() => {
-        alert('✅ Mobile Legend ဈေးနှုန်းများ သိမ်းပြီးပါပြီ။');
-        document.getElementById('priceModal').classList.remove('show');
-      }).catch(err => alert('သိမ်းဆည်းမှု မအောင်မြင်ပါ။ ထပ်မံကြိုးစားပါ။'));
-      
+      if (document.getElementById('ml_weekly')) mlPrices.weeklyPass.price = parseInt(document.getElementById('ml_weekly').value);
+      mlPrices.firstRecharge?.forEach((_, i) => { const input = document.getElementById('ml_fr_' + i); if (input) mlPrices.firstRecharge[i].price = parseInt(input.value); });
+      mlPrices.otherDiamonds?.forEach((_, i) => { const input = document.getElementById('ml_od_' + i); if (input) mlPrices.otherDiamonds[i].price = parseInt(input.value); });
+      db.ref('prices/mobile_legend').set(mlPrices).then(() => { alert('✅ Mobile Legend ဈေးနှုန်းများ သိမ်းပြီးပါပြီ။'); document.getElementById('priceModal').classList.remove('show'); }).catch(err => alert('သိမ်းဆည်းမှု မအောင်မြင်ပါ။ ထပ်မံကြိုးစားပါ။'));
     } else if (currentPriceGame === 'Pubg' && pubgPrices) {
-      pubgPrices.uc?.forEach((_, i) => { 
-        const input = document.getElementById(`pubg_uc_${i}`); 
-        if (input) pubgPrices.uc[i].price = parseInt(input.value); 
-      });
-      pubgPrices.code?.forEach((_, i) => { 
-        const input = document.getElementById(`pubg_code_${i}`); 
-        if (input) pubgPrices.code[i].price = parseInt(input.value); 
-      });
-      db.ref('prices/pubg').set(pubgPrices).then(() => {
-        alert('✅ PUBG ဈေးနှုန်းများ သိမ်းပြီးပါပြီ။');
-        document.getElementById('priceModal').classList.remove('show');
-      }).catch(err => alert('သိမ်းဆည်းမှု မအောင်မြင်ပါ။ ထပ်မံကြိုးစားပါ။'));
+      pubgPrices.uc?.forEach((_, i) => { const input = document.getElementById('pubg_uc_' + i); if (input) pubgPrices.uc[i].price = parseInt(input.value); });
+      if (pubgPrices.special) { pubgPrices.special.forEach((_, i) => { const input = document.getElementById('pubg_special_' + i); if (input) pubgPrices.special[i].price = parseInt(input.value); }); }
+      db.ref('prices/pubg').set(pubgPrices).then(() => { alert('✅ PUBG ဈေးနှုန်းများ သိမ်းပြီးပါပြီ။'); document.getElementById('priceModal').classList.remove('show'); }).catch(err => alert('သိမ်းဆည်းမှု မအောင်မြင်ပါ။ ထပ်မံကြိုးစားပါ။'));
+    } else if (currentPriceGame === 'Premium Service' && premiumPrices) {
+      if (premiumPrices.telegramPremium) { premiumPrices.telegramPremium.forEach((_, i) => { const input = document.getElementById('premium_tp_' + i); if (input) premiumPrices.telegramPremium[i].price = parseInt(input.value); }); }
+      if (premiumPrices.telegramStar) { premiumPrices.telegramStar.forEach((_, i) => { const input = document.getElementById('premium_ts_' + i); if (input) premiumPrices.telegramStar[i].price = parseInt(input.value); }); }
+      db.ref('prices/premium').set(premiumPrices).then(() => { alert('✅ Premium Service ဈေးနှုန်းများ သိမ်းပြီးပါပြီ။'); document.getElementById('priceModal').classList.remove('show'); }).catch(err => alert('သိမ်းဆည်းမှု မအောင်မြင်ပါ။ ထပ်မံကြိုးစားပါ။'));
+    } else if (currentPriceGame === 'MCGG' && mcggPrices) {
+      if (mcggPrices.weekly) { mcggPrices.weekly.forEach((_, i) => { const input = document.getElementById('mcgg_weekly_' + i); if (input) mcggPrices.weekly[i].price = parseInt(input.value); }); }
+      if (mcggPrices.event) { mcggPrices.event.forEach((_, i) => { const input = document.getElementById('mcgg_event_' + i); if (input) mcggPrices.event[i].price = parseInt(input.value); }); }
+      if (mcggPrices.double) { mcggPrices.double.forEach((_, i) => { const input = document.getElementById('mcgg_double_' + i); if (input) mcggPrices.double[i].price = parseInt(input.value); }); }
+      if (mcggPrices.standard) { mcggPrices.standard.forEach((_, i) => { const input = document.getElementById('mcgg_standard_' + i); if (input) mcggPrices.standard[i].price = parseInt(input.value); }); }
+      db.ref('prices/mcgg').set(mcggPrices).then(() => { alert('✅ MCGG ဈေးနှုန်းများ သိမ်းပြီးပါပြီ။'); document.getElementById('priceModal').classList.remove('show'); }).catch(err => alert('သိမ်းဆည်းမှု မအောင်မြင်ပါ။ ထပ်မံကြိုးစားပါ။'));
     }
   }
 
-  // Load Messages
+  // ==================== MESSAGES ====================
   function loadMessages() {
     db.ref('chats').on('value', (snapshot) => {
       allMessages = [];
@@ -478,12 +463,13 @@
     container.innerHTML = '';
     userMessages.forEach(msg => {
       const div = document.createElement('div'); div.className = 'message-card';
-      div.innerHTML = `<div><span class="user-name"><i class="fas fa-user"></i> ${escapeHtml(msg.userName || 'အသုံးပြုသူ')}</span> <small>${formatDate(msg.timestamp)}</small></div><div class="message-text">${escapeHtml(msg.text)}</div><div class="reply-area"><input type="text" id="reply_${msg.id}" placeholder="ပြန်ကြားရန် စာသားရိုက်ထည့်ပါ..."><button class="reply-btn" data-id="${msg.id}" data-userid="${msg.userId}">ပြန်ကြားမည်</button></div>`;
+      div.innerHTML = '<div><span class="user-name"><i class="fas fa-user"></i> ' + escapeHtml(msg.userName || 'အသုံးပြုသူ') + '</span> <small>' + formatDate(msg.timestamp) + '</small></div><div class="message-text">' + escapeHtml(msg.text) + '</div><div class="reply-area"><input type="text" id="reply_' + msg.id + '" placeholder="ပြန်ကြားရန် စာသားရိုက်ထည့်ပါ..."><button class="reply-btn" data-id="' + msg.id + '" data-userid="' + msg.userId + '">ပြန်ကြားမည်</button></div>';
       container.appendChild(div);
     });
-    document.querySelectorAll('.reply-btn').forEach(btn => btn.addEventListener('click', () => { const input = document.getElementById(`reply_${btn.dataset.id}`); const text = input.value.trim(); if (text) { db.ref('chats/' + btn.dataset.userId).push({ text: text, sender: 'admin', timestamp: Date.now(), userName: 'Admin' }); input.value = ''; } }));
+    document.querySelectorAll('.reply-btn').forEach(btn => btn.addEventListener('click', () => { const input = document.getElementById('reply_' + btn.dataset.id); const text = input.value.trim(); if (text) { db.ref('chats/' + btn.dataset.userId).push({ text: text, sender: 'admin', timestamp: Date.now(), userName: 'Admin' }); input.value = ''; } }));
   }
 
+  // ==================== UTILITIES ====================
   function updateStats() {
     document.getElementById('totalUsers').innerText = allUsers.length;
     document.getElementById('totalGames').innerText = allGames.length;
@@ -497,14 +483,14 @@
 
   function switchTab(tabId) {
     document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-    document.getElementById(`${tabId}Tab`).classList.add('active');
+    document.getElementById(tabId + 'Tab').classList.add('active');
     document.querySelectorAll('.tab-btn').forEach(btn => { btn.classList.remove('active'); if (btn.dataset.tab === tabId) btn.classList.add('active'); });
   }
 
   function closeBalanceModal() { document.getElementById('balanceModal').classList.remove('show'); currentUserId = null; currentBalanceMode = null; }
   function closeMessageModal() { document.getElementById('messageUserModal').classList.remove('show'); currentMessageUserId = null; }
 
-  // Event Listeners
+// ==================== EVENT LISTENERS ====================
   document.querySelectorAll('.tab-btn').forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
   document.querySelectorAll('.stat-card').forEach(card => card.addEventListener('click', () => switchTab(card.dataset.tab)));
   document.getElementById('logoutBtn').addEventListener('click', () => { sessionStorage.removeItem('adminLoggedIn'); window.location.href = 'admin-login.html'; });
@@ -520,6 +506,7 @@
     if (e.target === document.getElementById('messageUserModal')) closeMessageModal(); 
   });
 
+  // ==================== INITIALIZE ====================
   loadOrders(); loadTopups(); loadUsers(); loadGames(); loadMessages(); loadPrices();
 </script>
 </body>
